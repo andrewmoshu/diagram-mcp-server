@@ -231,6 +231,107 @@ with Diagram("Multi-Cloud Setup", show=False):
     aws >> [gcp, azure]
 ```
 
+## Example Diagrams Gallery
+
+Below are complete architecture diagram examples generated using this MCP server. These demonstrate real-world patterns across different cloud providers and deployment scenarios.
+
+### AWS Serverless Architecture
+
+A production-ready serverless architecture using AWS services.
+
+<p align="center">
+  <img src="examples/aws-serverless-architecture.png" alt="AWS Serverless Architecture" width="600">
+</p>
+
+**Architecture Components:**
+- Users connecting via HTTPS
+- API Gateway as the entry point
+- Multiple Lambda functions for compute
+- DynamoDB for NoSQL database storage
+
+---
+
+### GCP Serverless Architecture
+
+A serverless architecture on Google Cloud Platform with managed services.
+
+<p align="center">
+  <img src="examples/gcp-serverless-architecture.png" alt="GCP Serverless Architecture" width="600">
+</p>
+
+**Architecture Components:**
+- Users connecting via HTTPS
+- Load Balancer for traffic distribution
+- Cloud Functions for serverless compute
+- Firestore for document database
+
+---
+
+### Azure Serverless Architecture
+
+A serverless architecture on Microsoft Azure featuring fully managed services.
+
+<p align="center">
+  <img src="examples/azure-serverless-architecture.png" alt="Azure Serverless Architecture" width="600">
+</p>
+
+**Architecture Components:**
+- Users connecting via HTTPS
+- Application Gateway for routing and load balancing
+- Function Apps for serverless execution
+- Cosmos DB for globally distributed database
+
+---
+
+### Kubernetes Architecture
+
+A containerized application deployment on Kubernetes with full storage support.
+
+<p align="center">
+  <img src="examples/kubernetes-architecture.png" alt="Kubernetes Architecture" width="700">
+</p>
+
+**Architecture Components:**
+- Ingress for external access and routing
+- Service for internal load balancing
+- Multiple Pods running containerized applications
+- Persistent Volumes and Claims for stateful storage
+
+---
+
+### Multi-Cloud Architecture
+
+A distributed architecture spanning AWS, GCP, and Azure with global DNS routing for high availability.
+
+<p align="center">
+  <img src="examples/multi-cloud-architecture.png" alt="Multi-Cloud Architecture" width="500">
+</p>
+
+**Architecture Components:**
+- Global DNS (Route53) for intelligent traffic routing
+- **AWS Region**: ELB → Lambda → DynamoDB
+- **GCP Region**: Load Balancer → Cloud Functions → Firestore
+- **Azure Region**: Load Balancer → Function Apps → Cosmos DB
+
+---
+
+### Hybrid Cloud Architecture
+
+An enterprise hybrid cloud setup connecting on-premises infrastructure to AWS cloud.
+
+<p align="center">
+  <img src="examples/hybrid-cloud-architecture.png" alt="Hybrid Cloud Architecture" width="700">
+</p>
+
+**Architecture Components:**
+- On-premises application server and PostgreSQL database
+- VPN Gateway for secure encrypted connectivity
+- AWS VPC with EC2 instances
+- RDS for database replication and disaster recovery
+- S3 for backup and archival storage
+
+---
+
 ## Development
 
 ### Testing
