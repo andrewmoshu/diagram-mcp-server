@@ -16,7 +16,8 @@
 FROM public.ecr.aws/amazonlinux/amazonlinux@sha256:e27a70c006c68f0d194cc9b9624714d6ed8d979a94f60f7d31392f4c8294155b AS uv
 
 # Install build dependencies needed for compiling packages
-RUN dnf install -y shadow-utils python3 python3-devel gcc && \
+# graphviz-devel is required for pygraphviz (dependency of graphviz2drawio)
+RUN dnf install -y shadow-utils python3 python3-devel gcc graphviz-devel && \
     dnf clean all
 
 # Install the project into `/app`

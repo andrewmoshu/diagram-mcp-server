@@ -11,26 +11,51 @@ This MCP server seamlessly creates [diagrams](https://diagrams.mingrammer.com/) 
 
 ## Prerequisites
 
-1. Install [GraphViz](https://www.graphviz.org/) - Required for diagram generation
+1. Install [GraphViz](https://www.graphviz.org/) **with development headers** - Required for diagram generation and .drawio export
 2. Install `uv` from [Astral](https://docs.astral.sh/uv/getting-started/installation/) (recommended) or use `pip`
 
-## Installation
+### Installing GraphViz
 
-The package is available on PyPI and can be installed using `uvx` or `pip`:
-
+**macOS (Homebrew):**
 ```bash
-# Using uvx (recommended - no installation needed)
-uvx infrastructure-diagram-mcp-server
-
-# Or install with pip
-pip install infrastructure-diagram-mcp-server
+brew install graphviz
 ```
 
-### MCP Client Configuration
+**Ubuntu/Debian:**
+```bash
+sudo apt-get install graphviz graphviz-dev
+```
 
-Configure the MCP server in your MCP client:
+**Windows (Chocolatey):**
+```powershell
+choco install graphviz
+```
+Or download from [graphviz.org](https://graphviz.org/download/)
 
-**Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+## MCP Client Configuration
+
+Configure the MCP server in your MCP client. The `CFLAGS` and `LDFLAGS` (or `INCLUDE` and `LIB` on Windows) environment variables are needed for the initial build of `pygraphviz`.
+
+**Claude Desktop / Cursor on macOS** (`~/Library/Application Support/Claude/claude_desktop_config.json` or `~/.cursor/mcp.json`):
+```json
+{
+  "mcpServers": {
+    "infrastructure-diagrams": {
+      "command": "uvx",
+      "args": ["infrastructure-diagram-mcp-server"],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR",
+        "CFLAGS": "-I/opt/homebrew/include",
+        "LDFLAGS": "-L/opt/homebrew/lib"
+      }
+    }
+  }
+}
+```
+
+> **Note**: `/opt/homebrew` is the default Homebrew prefix on Apple Silicon Macs. For Intel Macs, use `/usr/local` instead.
+
+**Linux** (e.g., `~/.config/claude/claude_desktop_config.json`):
 ```json
 {
   "mcpServers": {
@@ -44,6 +69,27 @@ Configure the MCP server in your MCP client:
   }
 }
 ```
+
+> **Note**: On Linux, install `graphviz-dev` first (`sudo apt-get install graphviz graphviz-dev`), then no extra env vars are needed.
+
+**Windows** (e.g., `%APPDATA%\Claude\claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "infrastructure-diagrams": {
+      "command": "uvx",
+      "args": ["infrastructure-diagram-mcp-server"],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR",
+        "INCLUDE": "C:\\Program Files\\Graphviz\\include",
+        "LIB": "C:\\Program Files\\Graphviz\\lib"
+      }
+    }
+  }
+}
+```
+
+> **Note**: Adjust the Graphviz path if you installed it in a different location.
 
 **Other MCP Clients** (e.g., Kiro - `~/.kiro/settings/mcp.json`):
 ```json
@@ -53,28 +99,12 @@ Configure the MCP server in your MCP client:
       "command": "uvx",
       "args": ["infrastructure-diagram-mcp-server"],
       "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
+        "FASTMCP_LOG_LEVEL": "ERROR",
+        "CFLAGS": "-I/opt/homebrew/include",
+        "LDFLAGS": "-L/opt/homebrew/lib"
       },
       "autoApprove": [],
       "disabled": false
-    }
-  }
-}
-```
-
-### Windows Installation
-
-For Windows users:
-
-```json
-{
-  "mcpServers": {
-    "infrastructure-diagrams": {
-      "command": "uvx",
-      "args": ["infrastructure-diagram-mcp-server"],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      }
     }
   }
 }
@@ -385,6 +415,52 @@ uv pip install -e ".[dev]"
 ```
 
 This will install the required dependencies for development, including pytest, pytest-asyncio, and pytest-cov.
+
+## Troubleshooting
+
+### `pygraphviz` build error: `graphviz/cgraph.h not found`
+
+This error occurs when the GraphViz development headers are not found during installation.
+
+**macOS:**
+```bash
+# Make sure graphviz is installed
+brew install graphviz
+
+# Set compiler flags
+export CFLAGS="-I$(brew --prefix graphviz)/include"
+export LDFLAGS="-L$(brew --prefix graphviz)/lib"
+
+# Then install
+uvx infrastructure-diagram-mcp-server
+```
+
+**Linux:**
+```bash
+# Install development headers
+sudo apt-get install graphviz graphviz-dev  # Ubuntu/Debian
+sudo dnf install graphviz-devel              # Fedora/RHEL
+```
+
+**Windows:**
+```powershell
+# Install Graphviz with Chocolatey
+choco install graphviz
+
+# Set environment variables
+$env:INCLUDE = "C:\Program Files\Graphviz\include"
+$env:LIB = "C:\Program Files\Graphviz\lib"
+```
+
+### MCP server fails to start in Claude Desktop / Cursor
+
+1. Make sure the `CFLAGS`/`LDFLAGS` (macOS) or `INCLUDE`/`LIB` (Windows) environment variables are set in your MCP config
+2. Try clearing the uv cache: `rm -rf ~/.cache/uv`
+3. Restart your MCP client
+
+### Diagrams not displaying inline
+
+Make sure you're using a recent version of Claude Desktop or Cursor that supports MCP ImageContent.
 
 ## Contributing
 
