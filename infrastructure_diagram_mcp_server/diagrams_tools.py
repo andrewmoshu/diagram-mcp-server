@@ -1,4 +1,11 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Modifications Copyright 2025 Andrii Moshurenko
+# - Restructured as infrastructure-diagram-mcp-server
+# - Added comprehensive diagram examples for GCP, Azure, Hybrid, and Multi-cloud
+# - Added draw.io export support
+# - Enhanced icon discovery and filtering
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -646,8 +653,31 @@ with Diagram("Broker Consumers", show=False):
 
     # GCP examples
     if diagram_type in [DiagramType.GCP, DiagramType.ALL]:
-        examples['gcp_basic'] = """with Diagram("GCP Serverless App", show=False):
-    Functions("api") >> Firestore("database") >> Storage("storage")
+        # Three-tier serverless architecture following GCP best practices
+        examples['gcp_basic'] = """with Diagram("GCP Serverless Application", show=False, direction="TB"):
+    with Cluster("Production Project"):
+        with Cluster("API Layer"):
+            endpoints = Endpoints("Cloud Endpoints")
+            gateway = APIGateway("API Gateway")
+
+        with Cluster("Application Layer"):
+            with Cluster("Cloud Run Functions"):
+                api_handler = Functions("api-handler")
+                async_worker = Functions("async-worker")
+                trigger_fn = Functions("storage-trigger")
+
+            events = PubSub("event-bus")
+
+        with Cluster("Data Layer"):
+            firestore = Firestore("documents")
+            storage = Storage("objects")
+            cache = Memorystore("cache")
+
+    endpoints >> gateway >> api_handler
+    api_handler >> firestore
+    api_handler >> cache >> firestore
+    api_handler >> events >> async_worker
+    storage >> trigger_fn >> events
 """
 
         examples['gcp_data_pipeline'] = """with Diagram("GCP Data Pipeline", show=False, direction="LR"):
@@ -691,61 +721,106 @@ with Diagram("Broker Consumers", show=False):
     services >> queue
 """
 
-        examples['gcp_ml_pipeline'] = """with Diagram("GCP ML Pipeline", show=False, direction="TB"):
-    data = Storage("training data")
-    notebook = AIPlatform("experiment")
+        # MLOps architecture with Vertex AI Pipelines following Google Cloud best practices
+        examples['gcp_ml_pipeline'] = """with Diagram("GCP MLOps Pipeline", show=False, direction="LR"):
+    with Cluster("ML Project"):
+        with Cluster("Data Sources"):
+            bq_source = BigQuery("feature store")
+            gcs_data = Storage("training data")
 
-    with Cluster("Training"):
-        train = AIPlatform("model training")
-        registry = ContainerRegistry("model registry")
+        with Cluster("Development"):
+            notebooks = AIPlatform("Vertex Workbench")
+            experiments = AIPlatform("Experiments")
 
-    serve = Functions("prediction api")
+        with Cluster("CI/CD Pipeline"):
+            source = SourceRepositories("pipeline code")
+            build = Build("Cloud Build")
+            registry = ContainerRegistry("Artifact Registry")
 
-    data >> notebook >> train >> registry >> serve
+        with Cluster("Vertex AI Pipelines"):
+            pipeline = Dataflow("training pipeline")
+            train = AIPlatform("model training")
+            evaluate = AIPlatform("evaluation")
+            model_registry = AIPlatform("Model Registry")
+
+        with Cluster("Serving"):
+            endpoint = AIPlatform("prediction endpoint")
+            monitor = Logging("model monitoring")
+
+    [bq_source, gcs_data] >> notebooks >> experiments
+    experiments >> source >> build >> registry
+    registry >> pipeline >> train >> evaluate >> model_registry
+    model_registry >> endpoint >> monitor
 """
 
+        # Event-driven architecture with Pub/Sub, Cloud Run functions, and error handling
         examples['gcp_event_driven'] = """with Diagram("GCP Event-Driven Architecture", show=False, direction="LR"):
-    sources = [
-        PubSub("user events"),
-        Scheduler("scheduled jobs")
-    ]
+    with Cluster("Events Project"):
+        with Cluster("Event Sources"):
+            user_events = PubSub("user-events")
+            storage_events = Storage("file uploads")
+            scheduler = Scheduler("cron triggers")
 
-    with Cluster("Event Processing"):
-        router = Functions("event router")
-        with Cluster("Handlers"):
-            handlers = [
-                Run("notification"),
-                Run("analytics"),
-                Run("audit")
-            ]
+        with Cluster("Event Routing"):
+            main_topic = PubSub("event-router")
+            dead_letter = PubSub("dead-letter-topic")
+            dlq_handler = Functions("dlq-processor")
 
-    with Cluster("State & Storage"):
-        state = Firestore("state")
-        logs = Logging("logs")
+        with Cluster("Event Handlers (Cloud Run)"):
+            with Cluster("Notification Service"):
+                notif = Run("notifications")
+            with Cluster("Analytics Service"):
+                analytics = Run("analytics-processor")
+            with Cluster("Audit Service"):
+                audit = Run("audit-logger")
 
-    sources >> router >> handlers
-    handlers >> state
-    handlers >> logs
+        with Cluster("State Management"):
+            state = Firestore("event-state")
+            cache = Memorystore("dedup-cache")
+
+        monitoring = Monitoring("alerts")
+        logs = Logging("event-logs")
+
+    [user_events, storage_events, scheduler] >> main_topic
+    main_topic >> [notif, analytics, audit]
+    main_topic >> Edge(style="dashed", label="failed") >> dead_letter >> dlq_handler
+    [notif, analytics, audit] >> cache >> state
+    [notif, analytics, audit] >> logs >> monitoring
 """
 
-        examples['gcp_iot_streaming'] = """with Diagram("GCP IoT Streaming Platform", show=False, direction="TB"):
-    devices = IotCore("iot devices")
-    ingestion = PubSub("telemetry stream")
+        # IoT streaming architecture with proper data flow and processing tiers
+        examples['gcp_iot_streaming'] = """with Diagram("GCP IoT Streaming Platform", show=False, direction="LR"):
+    with Cluster("IoT Project"):
+        with Cluster("Device Layer"):
+            devices = IotCore("IoT Core Registry")
+            telemetry = PubSub("telemetry-topic")
+            commands = PubSub("command-topic")
 
-    with Cluster("Stream Processing"):
-        process = Dataflow("real-time processing")
-        batch = BigQuery("analytics")
+        with Cluster("Stream Processing Layer"):
+            with Cluster("Dataflow Jobs"):
+                hot_path = Dataflow("real-time aggregation")
+                cold_path = Dataflow("batch enrichment")
 
-    with Cluster("Actions"):
-        alerts = Functions("alerting")
-        ml = AIPlatform("anomaly detection")
+            with Cluster("Alert Processing"):
+                alert_fn = Functions("threshold-alerts")
+                ml_inference = AIPlatform("anomaly detection")
 
-    storage = Bigtable("time series db")
+        with Cluster("Storage Layer"):
+            time_series = Bigtable("time-series-db")
+            warehouse = BigQuery("analytics-warehouse")
+            archive = Storage("cold-storage")
 
-    devices >> ingestion >> process
-    process >> [batch, storage]
-    process >> alerts
-    batch >> ml
+        with Cluster("Visualization"):
+            dashboard = Datalab("dashboards")
+            monitoring = Monitoring("alerts")
+
+    devices >> telemetry >> hot_path
+    hot_path >> time_series >> dashboard
+    hot_path >> alert_fn >> monitoring
+    hot_path >> ml_inference
+    telemetry >> cold_path >> warehouse >> dashboard
+    cold_path >> archive
+    commands >> devices
 """
 
         # Shared VPC example showing GCP networking best practices

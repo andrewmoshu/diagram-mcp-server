@@ -1,4 +1,9 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Modifications Copyright 2025 Andrii Moshurenko
+# - Restructured as infrastructure-diagram-mcp-server
+# - Updated MCP tool responses to return proper content types
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +17,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""aws-diagram-mcp-server implementation.
+"""infrastructure-diagram-mcp-server implementation.
 
 This server provides tools to generate diagrams using the Python diagrams package.
 It accepts Python code as a string and generates PNG diagrams without displaying them.
