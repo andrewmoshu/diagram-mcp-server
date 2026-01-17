@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.4] - 2026-01-17
+
+### Added
+
+- **Infrastructure-as-Code (IaC) Parsing Tools**: Three new MCP tools to parse IaC files and extract infrastructure information
+  - `parse_k8s_manifest`: Parse Kubernetes YAML manifests to extract resources and relationships
+  - `parse_helm_chart`: Parse Helm charts with full `helm template` rendering or fallback mode
+  - `parse_terraform`: Parse Terraform HCL configurations to extract resources, data sources, and modules
+- **Comprehensive Relationship Detection**:
+  - K8s: Service→Deployment, Deployment→ConfigMap/Secret/PVC, Ingress→Service relationships
+  - Terraform: Explicit `depends_on` and implicit reference relationships between resources
+- **Multi-Provider Support for Terraform**: Automatic provider detection from resource type prefixes (aws_, google_, azurerm_, kubernetes_)
+- **New Dependencies**: Added PyYAML for K8s/Helm parsing and python-hcl2 for Terraform HCL parsing
+- **Comprehensive Test Suite**: 85+ new tests for all parsers covering basic parsing, relationship detection, edge cases
+
+### Changed
+
+- Parsers return structured data (resources, relationships, modules) rather than auto-generating diagrams
+- This allows users to inspect the parsed infrastructure before diagram generation
+
+### Documentation
+
+- Added IaC Parsing section to README with usage examples
+- Added example diagrams generated from real IaC files:
+  - GCP Foundation Organization Layer (from Terraform)
+  - Milvus Vector Database Architecture (from Helm chart)
+
 ## [0.0.3] - 2026-01-15
 
 ### Added
