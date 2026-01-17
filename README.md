@@ -13,6 +13,7 @@ This MCP server seamlessly creates [diagrams](https://diagrams.mingrammer.com/) 
 
 1. Install [GraphViz](https://www.graphviz.org/) **with development headers** - Required for diagram generation and .drawio export
 2. Install `uv` from [Astral](https://docs.astral.sh/uv/getting-started/installation/) (recommended) or use `pip`
+3. *(Optional)* Install [Helm](https://helm.sh/) - Required for full Helm chart parsing with `parse_helm_chart`
 
 ### Installing GraphViz
 
@@ -31,6 +32,27 @@ sudo apt-get install graphviz graphviz-dev
 choco install graphviz
 ```
 Or download from [graphviz.org](https://graphviz.org/download/)
+
+### Installing Helm (Optional)
+
+Helm is required for full template rendering with the `parse_helm_chart` tool. Without Helm, the parser will use a fallback mode with limited template support.
+
+**macOS (Homebrew):**
+```bash
+brew install helm
+```
+
+**Ubuntu/Debian:**
+```bash
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+```
+
+**Windows (Chocolatey):**
+```powershell
+choco install kubernetes-helm
+```
+
+Or download from [helm.sh/docs/intro/install](https://helm.sh/docs/intro/install/)
 
 ## MCP Client Configuration
 
@@ -151,6 +173,7 @@ The Infrastructure Diagram MCP Server provides the following capabilities:
 7. **Seamless Display**: Diagrams appear inline in Claude Desktop with automatic rendering
 8. **Flexible Output**: Save diagrams to PNG format in your workspace directory
 9. **Editable Export**: Automatically generates .drawio files for editing in diagrams.net/draw.io
+10. **IaC Parsing**: Parse Kubernetes manifests, Helm charts, and Terraform configurations to extract infrastructure information for diagram generation
 
 ## How to Use
 
@@ -179,6 +202,19 @@ Generate an AWS serverless architecture with API Gateway, Lambda, and DynamoDB
 
 ```
 Design a multi-cloud architecture spanning AWS, GCP, and Azure
+```
+
+**Parse Infrastructure-as-Code:**
+```
+Parse the Kubernetes manifests in ./k8s/ and show me the resources and relationships
+```
+
+```
+Parse the Helm chart at ./charts/my-app/ and generate a diagram of the infrastructure
+```
+
+```
+Parse the Terraform configuration in ./infrastructure/ and visualize the AWS resources
 ```
 
 The server will automatically:
@@ -212,6 +248,7 @@ This fork extends the original AWS Diagram MCP Server with:
 - ✅ **Complete Icon Coverage**: All 2000+ icons properly imported and available
 - ✅ **Enhanced Display**: MCP ImageContent format for seamless inline rendering
 - ✅ **Editable Export**: Automatic .drawio file generation for editing in diagrams.net/draw.io
+- ✅ **IaC Parsing**: Parse Kubernetes manifests, Helm charts, and Terraform HCL to extract infrastructure
 - ✅ **Bug Fixes**: Resolved double `.png` extension and read-only filesystem issues
 - ✅ **Icon Corrections**: Fixed 28+ incorrect class names in examples
 
@@ -377,6 +414,90 @@ An enterprise hybrid cloud setup connecting on-premises infrastructure to AWS cl
 - AWS VPC with EC2 instances
 - RDS for database replication and disaster recovery
 - S3 for backup and archival storage
+
+---
+
+### GCP Foundation Organization Layer (from Terraform)
+
+A comprehensive GCP organization-level infrastructure parsed from the [terraform-example-foundation](https://github.com/terraform-google-modules/terraform-example-foundation) using the `parse_terraform` tool.
+
+<p align="center">
+  <img src="examples/gcp_foundation_organization_layer.png" alt="GCP Foundation Organization Layer" width="800">
+</p>
+
+**Architecture Components:**
+- Organization-level resources (VPC Service Controls, Resource Tags, Org Policies)
+- Logging infrastructure (Cloud Logging, Pub/Sub, Storage, BigQuery sinks)
+- Security services (Cloud KMS, Secret Manager, Security Command Center)
+- CI/CD pipeline (Cloud Build, Source Repos, Artifact Registry)
+- Network hub (Hub VPC, Cloud NAT, Cloud Router, Interconnects)
+- Environment-specific shared VPCs (Dev, NonProd, Prod)
+
+---
+
+### Milvus Vector Database Architecture (from Helm Chart)
+
+A production-ready Milvus deployment parsed from the official [milvus-helm](https://github.com/milvus-io/milvus-helm) chart using the `parse_helm_chart` tool.
+
+<p align="center">
+  <img src="examples/milvus-helm-architecture.png" alt="Milvus Helm Architecture" width="500">
+</p>
+
+**Architecture Components:**
+- Client access through Milvus SDK
+- Access Layer (Service, Deployment for milvus-proxy)
+- Coordinator Layer (rootcoord, querycoord, indexcoord, datacoord)
+- Worker Layer (querynode, indexnode, datanode)
+- Dependencies (etcd for metadata, MinIO for object storage, Pulsar for message queue)
+
+---
+
+## IaC Parsing Tools
+
+The server includes three tools for parsing Infrastructure-as-Code files:
+
+### parse_k8s_manifest
+
+Parse Kubernetes YAML manifests to extract resources and relationships.
+
+```
+Parse the K8s manifests in ./manifests/ and show me what's deployed
+```
+
+**Detects:**
+- All K8s resource types (Deployments, Services, ConfigMaps, Secrets, PVCs, Ingress, etc.)
+- Relationships: Service→Deployment, Deployment→ConfigMap/Secret/PVC, Ingress→Service
+- Namespace grouping
+
+### parse_helm_chart
+
+Parse Helm charts with full `helm template` rendering or fallback mode when Helm CLI is unavailable.
+
+> **Note**: For best results, [install Helm](#installing-helm-optional). Without Helm, the parser uses a fallback mode with limited Go template support.
+
+```
+Parse the Helm chart at ./charts/my-app/ with values from values-prod.yaml
+```
+
+**Features:**
+- Full Helm template rendering (requires Helm CLI)
+- Fallback mode for basic parsing without Helm
+- Custom values file and inline values support
+- Release name and namespace configuration
+
+### parse_terraform
+
+Parse Terraform HCL configurations to extract resources, data sources, modules, and relationships.
+
+```
+Parse the Terraform configuration in ./terraform/ and visualize the infrastructure
+```
+
+**Detects:**
+- Resources from AWS, GCP, Azure, and Kubernetes providers
+- Data sources and module references
+- Explicit `depends_on` relationships
+- Implicit references between resources
 
 ---
 
