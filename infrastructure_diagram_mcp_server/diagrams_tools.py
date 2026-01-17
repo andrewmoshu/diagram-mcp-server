@@ -83,6 +83,9 @@ async def generate_diagram(
         # If it's an absolute path, strip .png extension if present
         # (diagrams library adds .png automatically)
         output_path = filename[:-4] if filename.endswith('.png') else filename
+        # Set output_dir to the directory containing the file
+        output_dir = os.path.dirname(output_path) or os.getcwd()
+        os.makedirs(output_dir, exist_ok=True)
     else:
         # For non-absolute paths, use the "generated-diagrams" subdirectory
 
@@ -648,14 +651,16 @@ with Diagram("Broker Consumers", show=False):
 """
 
         examples['gcp_data_pipeline'] = """with Diagram("GCP Data Pipeline", show=False, direction="LR"):
-    source = PubSub("events")
+    with Cluster("Analytics Project"):
+        source = PubSub("events")
 
-    with Cluster("Processing"):
-        dataflow = Dataflow("transform")
-        dataproc = Dataproc("batch")
+        with Cluster("VPC Network"):
+            with Cluster("Processing Subnet"):
+                dataflow = Dataflow("transform")
+                dataproc = Dataproc("batch")
 
-    warehouse = BigQuery("analytics")
-    viz = Datalab("analysis")
+        warehouse = BigQuery("analytics")
+        viz = Datalab("analysis")
 
     source >> [dataflow, dataproc] >> warehouse >> viz
 """
@@ -663,19 +668,21 @@ with Diagram("Broker Consumers", show=False):
         examples['gcp_microservices'] = """with Diagram("GCP Microservices Architecture", show=False):
     lb = LoadBalancing("load balancer")
 
-    with Cluster("Cloud Run Services"):
-        services = [
-            Run("auth-service"),
-            Run("user-service"),
-            Run("order-service")
-        ]
+    with Cluster("Production Project"):
+        with Cluster("VPC Network"):
+            with Cluster("us-central1 Subnet"):
+                services = [
+                    Run("auth-service"),
+                    Run("user-service"),
+                    Run("order-service")
+                ]
 
-    with Cluster("Databases"):
-        sql = SQL("users")
-        firestore = Firestore("orders")
+            with Cluster("Data Subnet"):
+                sql = SQL("users")
+                firestore = Firestore("orders")
+                cache = Memorystore("cache")
 
-    cache = Memorystore("cache")
-    queue = PubSub("events")
+        queue = PubSub("events")
 
     lb >> services
     services[0] >> sql
@@ -739,6 +746,40 @@ with Diagram("Broker Consumers", show=False):
     process >> [batch, storage]
     process >> alerts
     batch >> ml
+"""
+
+        # Shared VPC example showing GCP networking best practices
+        examples['gcp_shared_vpc'] = """with Diagram("GCP Shared VPC Architecture", show=False, direction="TB"):
+    interconnect = DedicatedInterconnect("Cloud Interconnect")
+
+    with Cluster("Shared VPC Host Project"):
+        with Cluster("Shared VPC Network"):
+            with Cluster("us-central1"):
+                prod_subnet = VPC("prod-subnet\\n10.0.1.0/24")
+                dev_subnet = VPC("dev-subnet\\n10.0.2.0/24")
+
+            with Cluster("us-east1"):
+                dr_subnet = VPC("dr-subnet\\n10.0.3.0/24")
+
+            nat = NAT("Cloud NAT")
+            fw = FirewallRules("Firewall Rules")
+
+    with Cluster("Production Service Project"):
+        with Cluster("GKE Cluster"):
+            prod_gke = GKE("prod-cluster")
+            prod_nodes = [
+                ComputeEngine("node-1"),
+                ComputeEngine("node-2")
+            ]
+
+    with Cluster("Development Service Project"):
+        dev_run = Run("dev-services")
+        dev_sql = SQL("dev-db")
+
+    interconnect >> fw >> prod_subnet
+    prod_subnet >> prod_gke >> prod_nodes
+    dev_subnet >> dev_run >> dev_sql
+    [prod_subnet, dev_subnet] >> nat
 """
 
     # Azure examples

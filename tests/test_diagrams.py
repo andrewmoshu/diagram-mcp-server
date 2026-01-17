@@ -36,12 +36,15 @@ class TestGetDiagramExamples:
         assert len(response.examples) > 0
         # Check that we have examples for each diagram type
         assert any(key.startswith('aws_') for key in response.examples.keys())
+        assert any(key.startswith('gcp_') for key in response.examples.keys())
+        assert any(key.startswith('azure_') for key in response.examples.keys())
         assert any(key.startswith('sequence') for key in response.examples.keys())
         assert any(key.startswith('flow') for key in response.examples.keys())
         assert any(key.startswith('class') for key in response.examples.keys())
         assert any(key.startswith('k8s_') for key in response.examples.keys())
         assert any(key.startswith('onprem_') for key in response.examples.keys())
         assert any(key.startswith('custom_') for key in response.examples.keys())
+        assert any(key.startswith('hybrid_') for key in response.examples.keys())
 
     def test_get_aws_examples(self):
         """Test getting AWS diagram examples."""
@@ -56,6 +59,40 @@ class TestGetDiagramExamples:
         assert 'aws_clustered_web_services' in response.examples
         assert 'aws_event_processing' in response.examples
         assert 'aws_bedrock' in response.examples
+
+    def test_get_gcp_examples(self):
+        """Test getting GCP diagram examples."""
+        response = get_diagram_examples(DiagramType.GCP)
+        assert response.examples is not None
+        assert len(response.examples) > 0
+        # Check that all examples are GCP examples
+        assert all(key.startswith('gcp_') for key in response.examples.keys())
+        # Check that we have the expected GCP examples
+        assert 'gcp_basic' in response.examples
+        assert 'gcp_data_pipeline' in response.examples
+        assert 'gcp_microservices' in response.examples
+        assert 'gcp_shared_vpc' in response.examples
+
+    def test_get_azure_examples(self):
+        """Test getting Azure diagram examples."""
+        response = get_diagram_examples(DiagramType.AZURE)
+        assert response.examples is not None
+        assert len(response.examples) > 0
+        # Check that all examples are Azure examples
+        assert all(key.startswith('azure_') for key in response.examples.keys())
+        # Check that we have the expected Azure examples
+        assert 'azure_basic' in response.examples
+
+    def test_get_hybrid_examples(self):
+        """Test getting hybrid/multi-cloud diagram examples."""
+        response = get_diagram_examples(DiagramType.HYBRID)
+        assert response.examples is not None
+        assert len(response.examples) > 0
+        # Check that all examples are hybrid examples
+        assert all(key.startswith('hybrid_') for key in response.examples.keys())
+        # Check that we have the expected hybrid examples
+        assert 'hybrid_aws_onprem' in response.examples
+        assert 'hybrid_disaster_recovery' in response.examples
 
     def test_get_sequence_examples(self):
         """Test getting sequence diagram examples."""
