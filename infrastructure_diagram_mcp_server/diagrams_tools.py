@@ -25,7 +25,6 @@ import diagrams
 import importlib
 import inspect
 import logging
-import multiprocessing
 import os
 import re
 import signal
@@ -42,77 +41,6 @@ from typing import Optional
 
 
 logger = logging.getLogger(__name__)
-
-
-def _execute_diagram_code(code: str, output_dir: str, error_queue: multiprocessing.Queue) -> None:
-    """Execute diagram code in a subprocess (used for Windows timeout support).
-
-    This function runs in a separate process and executes the diagram generation code.
-    Any errors are put into the error_queue for the parent process to retrieve.
-    """
-    try:
-        # Build namespace with all diagram imports
-        namespace = _build_diagram_namespace()
-
-        # Change to output directory and execute
-        original_cwd = os.getcwd()
-        try:
-            os.chdir(output_dir)
-            exec(code, namespace)  # nosec B102
-        finally:
-            os.chdir(original_cwd)
-    except Exception as e:
-        error_queue.put(str(e))
-
-
-def _build_diagram_namespace() -> dict:
-    """Build the namespace with all required diagram imports."""
-    import diagrams
-    from diagrams import Cluster, Diagram, Edge, Node
-
-    namespace = {
-        'diagrams': diagrams,
-        'Diagram': Diagram,
-        'Cluster': Cluster,
-        'Edge': Edge,
-        'Node': Node,
-    }
-
-    # Import all provider modules dynamically
-    providers = [
-        'aws', 'azure', 'gcp', 'k8s', 'onprem', 'generic',
-        'oci', 'alibabacloud', 'ibm', 'saas', 'digitalocean',
-        'firebase', 'elastic', 'outscale', 'openstack', 'custom'
-    ]
-
-    for provider in providers:
-        try:
-            provider_module = importlib.import_module(f'diagrams.{provider}')
-            namespace[provider] = provider_module
-
-            # Import submodules and their classes
-            if hasattr(provider_module, '__path__'):
-                import pkgutil
-                for _, submodule_name, _ in pkgutil.iter_modules(provider_module.__path__):
-                    try:
-                        submodule = importlib.import_module(f'diagrams.{provider}.{submodule_name}')
-                        # Add all classes from submodule to namespace
-                        for name, obj in inspect.getmembers(submodule, inspect.isclass):
-                            if not name.startswith('_'):
-                                namespace[name] = obj
-                    except ImportError:
-                        pass
-        except ImportError:
-            pass
-
-    # Add common utilities
-    try:
-        from diagrams.custom import Custom
-        namespace['Custom'] = Custom
-    except ImportError:
-        pass
-
-    return namespace
 
 
 async def generate_diagram(
@@ -387,17 +315,21 @@ from diagrams.aws.enduser import *
                 # Prepare new arguments
                 new_args = original_args
 
+                # Escape backslashes in path for Windows compatibility
+                # Using forward slashes works on all platforms in Python
+                output_path_escaped = output_path.replace('\\', '/')
+
                 # Add or replace parameters as needed
                 # If filename is already set, we need to replace it with our output_path
                 if has_filename:
                     # Replace the existing filename parameter
                     filename_pattern = r'filename\s*=\s*[\'"]([^\'"]*)[\'"]'
-                    new_args = re.sub(filename_pattern, f"filename='{output_path}'", new_args)
+                    new_args = re.sub(filename_pattern, f"filename='{output_path_escaped}'", new_args)
                 else:
                     # Add the filename parameter
                     if new_args and not new_args.endswith(','):
                         new_args += ', '
-                    new_args += f"filename='{output_path}'"
+                    new_args += f"filename='{output_path_escaped}'"
 
                 # Add show=False if not already set
                 if not has_show:
@@ -416,7 +348,7 @@ from diagrams.aws.enduser import *
 
         # Execute diagram code with timeout support
         # Unix: Use SIGALRM (lightweight, reliable)
-        # Windows: Use multiprocessing with timeout (can actually terminate hung processes)
+        # Windows: Run without timeout (SIGALRM not available, multiprocessing has issues with graphviz)
         is_unix = sys.platform != 'win32' and hasattr(signal, 'SIGALRM')
 
         if is_unix:
@@ -427,36 +359,15 @@ from diagrams.aws.enduser import *
             signal.signal(signal.SIGALRM, timeout_handler)
             signal.alarm(timeout)
 
-            original_cwd = os.getcwd()
-            try:
-                os.chdir(output_dir)
-                # nosec B102 - exec is necessary to run user-provided diagram code
-                exec(code, namespace)  # nosem: python.lang.security.audit.exec-detected.exec-detected
-            finally:
-                os.chdir(original_cwd)
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(output_dir)
+            # nosec B102 - exec is necessary to run user-provided diagram code
+            exec(code, namespace)  # nosem: python.lang.security.audit.exec-detected.exec-detected
+        finally:
+            os.chdir(original_cwd)
+            if is_unix:
                 signal.alarm(0)  # Cancel the alarm
-        else:
-            # Windows: Use multiprocessing with timeout
-            error_queue = multiprocessing.Queue()
-            process = multiprocessing.Process(
-                target=_execute_diagram_code,
-                args=(code, output_dir, error_queue)
-            )
-            process.start()
-            process.join(timeout=timeout)
-
-            if process.is_alive():
-                # Process is still running after timeout - terminate it
-                process.terminate()
-                process.join(timeout=5)  # Give it 5 seconds to terminate gracefully
-                if process.is_alive():
-                    process.kill()  # Force kill if still alive
-                raise TimeoutError(f'Diagram generation timed out after {timeout} seconds')
-
-            # Check for errors from the subprocess
-            if not error_queue.empty():
-                error_msg = error_queue.get()
-                raise RuntimeError(f'Diagram generation failed: {error_msg}')
 
         # Check if the file was created
         png_path = f'{output_path}.png'
