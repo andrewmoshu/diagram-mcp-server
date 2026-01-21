@@ -1,6 +1,6 @@
 [project]
 name = "infrastructure-diagram-mcp-server"
-version = "0.0.3"
+version = "0.0.4.1"
 description = "An MCP server that seamlessly creates infrastructure diagrams for any cloud provider using the Python diagrams package DSL"
 readme = "README.md"
 requires-python = ">=3.12"
