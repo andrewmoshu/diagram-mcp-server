@@ -1,0 +1,13 @@
+{
+  "$schema": "https://gofastmcp.com/public/schemas/fastmcp.json/v1.json",
+  "source": {
+    "path": "infrastructure_diagram_mcp_server/server.py",
+    "entrypoint": "mcp"
+  },
+  "environment": {
+    "dependencies": [
+      "pydantic",
+      "diagrams"
+    ]
+  }
+}

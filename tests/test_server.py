@@ -28,7 +28,7 @@ from infrastructure_diagram_mcp_server.server import (
     mcp_get_diagram_examples,
     mcp_list_diagram_icons,
 )
-from mcp.types import TextContent, ImageContent
+from fastmcp.utilities.types import Image
 from unittest.mock import AsyncMock, MagicMock, patch
 
 
@@ -57,13 +57,13 @@ class TestMcpGenerateDiagram:
             workspace_dir=tempfile.gettempdir(),
         )
 
-        # Check the result is a list with TextContent and ImageContent
+        # Check the result is a list with a text message and an Image
         assert isinstance(result, list)
         assert len(result) == 2
-        assert isinstance(result[0], TextContent)
-        assert isinstance(result[1], ImageContent)
-        assert 'Diagram generated successfully' in result[0].text
-        assert result[1].data == 'base64encodeddata'
+        assert isinstance(result[0], str)
+        assert isinstance(result[1], Image)
+        assert 'Diagram generated successfully' in result[0]
+        assert result[1].path == mock_result.path
 
         # Check that generate_diagram was called with the correct arguments
         mock_generate_diagram.assert_called_once_with(
@@ -92,11 +92,11 @@ class TestMcpGenerateDiagram:
             code='with Diagram("Test", show=False):\n    ELB("lb") >> EC2("web")',
         )
 
-        # Check the result is a list with TextContent and ImageContent
+        # Check the result is a list with a text message and an Image
         assert isinstance(result, list)
         assert len(result) == 2
-        assert isinstance(result[0], TextContent)
-        assert 'Diagram generated successfully' in result[0].text
+        assert isinstance(result[0], str)
+        assert 'Diagram generated successfully' in result[0]
 
     @pytest.mark.asyncio
     @patch('infrastructure_diagram_mcp_server.server.generate_diagram')
@@ -115,11 +115,9 @@ class TestMcpGenerateDiagram:
             code='with Diagram("Test", show=False):\n    ELB("lb") >> EC2("web")',
         )
 
-        # Check the result is a list with just TextContent containing error
-        assert isinstance(result, list)
-        assert len(result) == 1
-        assert isinstance(result[0], TextContent)
-        assert 'Error' in result[0].text
+        # Check the result is a plain error string
+        assert isinstance(result, str)
+        assert 'Error' in result
 
 
 class TestMcpGetDiagramExamples:
