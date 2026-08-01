@@ -34,20 +34,17 @@ from infrastructure_diagram_mcp_server.parsers import (
     K8sParser,
     TerraformParser,
 )
-from mcp.server.fastmcp import FastMCP
-from mcp.types import ImageContent, TextContent
+from fastmcp import FastMCP
+from fastmcp.utilities.types import Image
 from pydantic import Field
 from typing import Optional
 
 
+LOG_LEVEL = 'ERROR'
+
 # Create the MCP server
 mcp = FastMCP(
     'infrastructure-diagram-mcp-server',
-    dependencies=[
-        'pydantic',
-        'diagrams',
-    ],
-    log_level='ERROR',
     instructions="""Use this server to generate professional infrastructure diagrams for any cloud provider, on-premises, or hybrid environments using the Python diagrams package.
 
 WORKFLOW:
@@ -209,24 +206,12 @@ async def mcp_generate_diagram(
             message += f"\n  • Editable .drawio file: {result.drawio_path}"
 
         return [
-            TextContent(
-                type="text",
-                text=message
-            ),
-            ImageContent(
-                type="image",
-                data=result.image_data,
-                mimeType=result.mime_type or "image/png"
-            )
+            message,
+            Image(path=result.path),
         ]
     else:
         # For errors, just return text
-        return [
-            TextContent(
-                type="text",
-                text=f"Error: {result.message}"
-            )
-        ]
+        return f"Error: {result.message}"
 
 
 @mcp.tool(name='get_diagram_examples')
@@ -657,7 +642,7 @@ async def mcp_parse_terraform(
 
 def main():
     """Run the MCP server with CLI argument support."""
-    mcp.run()
+    mcp.run(log_level=LOG_LEVEL)
 
 
 if __name__ == '__main__':
