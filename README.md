@@ -507,15 +507,13 @@ Parse the Terraform configuration in ./terraform/ and visualize the infrastructu
 
 The project includes a comprehensive test suite to ensure the functionality of the MCP server. The tests are organized by module and cover all aspects of the server's functionality.
 
-To run the tests, use the provided script:
+With `uv` installed, run the tests using the project's `dev` dependency group:
 
 ```bash
-./run_tests.sh
+uv run --group dev pytest -xvs tests/
 ```
 
-This script will automatically install pytest and its dependencies if they're not already installed.
-
-Or run pytest directly (if you have pytest installed):
+Or run pytest directly if the development dependencies are already installed:
 
 ```bash
 pytest -xvs tests/
@@ -524,18 +522,18 @@ pytest -xvs tests/
 To run with coverage:
 
 ```bash
-pytest --cov=infrastructure_diagram_mcp_server --cov-report=term-missing tests/
+uv run --group dev pytest --cov=infrastructure_diagram_mcp_server --cov-report=term-missing tests/
 ```
 
 ### Development Dependencies
 
-To set up the development environment, install the development dependencies:
+To set up the development environment, sync the project and its `dev` dependency group:
 
 ```bash
-uv pip install -e ".[dev]"
+uv sync --group dev
 ```
 
-This will install the required dependencies for development, including pytest, pytest-asyncio, and pytest-cov.
+This installs the project dependencies together with pytest, pytest-asyncio, and pytest-cov.
 
 ## Troubleshooting
 
